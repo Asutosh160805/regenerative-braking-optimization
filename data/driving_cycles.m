@@ -82,8 +82,14 @@ function p = hwfet_profile()
     t = (0:1:765)';
     v = zeros(size(t));
     v(t >= 50 & t <= 700) = 30 * 3.6;
-    v(t < 50) = linspace(0, 30*3.6, 51)';
-    v(t > 700) = linspace(30*3.6, 0, 66)';
+    
+    % Fix: Use sum() to match logical index sizes
+    idx1 = t < 50;
+    v(idx1) = linspace(0, 30*3.6, sum(idx1))';
+    
+    idx2 = t > 700;
+    v(idx2) = linspace(30*3.6, 0, sum(idx2))';
+    
     p = [t, v];
 end
 
@@ -92,9 +98,20 @@ function p = aggressive_city_profile()
     v = zeros(size(t));
     for k = 0:14
         t0 = k * 40;
-        v(t >= t0 & t < t0+10) = linspace(0, 50, 11)';
+        
+        % Fix: Use sum() to match logical index sizes
+        idx_accel = t >= t0 & t < t0+10;
+        if sum(idx_accel) > 0
+            v(idx_accel) = linspace(0, 50, sum(idx_accel))';
+        end
+        
         v(t >= t0+10 & t < t0+25) = 50;
-        v(t >= t0+25 & t < t0+35) = linspace(50, 0, 11)';
+        
+        idx_decel = t >= t0+25 & t < t0+35;
+        if sum(idx_decel) > 0
+            v(idx_decel) = linspace(50, 0, sum(idx_decel))';
+        end
+        
         v(t >= t0+35 & t < t0+40) = 0;
     end
     p = [t, v];
