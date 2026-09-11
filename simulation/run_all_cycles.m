@@ -8,7 +8,21 @@ addpath(fullfile(root, 'simulation'));
 addpath(fullfile(root, 'analysis'));
 
 p = vehicle_params();
-cycles = driving_cycles();
+
+% Load driving cycles with error handling
+try
+    cycles = driving_cycles();
+    if isempty(cycles)
+        error('No driving cycles loaded');
+    end
+catch ME
+    fprintf('ERROR: Failed to load driving cycles\n');
+    fprintf('Reason: %s\n', ME.message);
+    fprintf('Stack trace:\n');
+    disp(ME.stack);
+    rethrow(ME);
+end
+
 control_modes = {'optimized', 'fixed_split', 'no_regen'};
 mode_labels = {'Optimized Regen', 'Fixed 60% Regen', 'Friction Only (Baseline)'};
 all_results = cell(numel(cycles), numel(control_modes));

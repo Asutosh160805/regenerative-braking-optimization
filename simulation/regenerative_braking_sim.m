@@ -56,25 +56,43 @@ function results = regenerative_braking_sim(cycle, p, varargin)
         end
 
         if P_regen_kW(k) > 0
-            E_in = P_regen_kW(k) * 1000 * dt_k * p.battery_charge_eff;
-            E_batt_J(k) = E_in;
-            soc(k) = min(max(soc(k-1) + E_in / (p.battery_capacity_kWh * 3.6e6), p.soc_min), p.soc_max);
+            % Energy conservation: only add energy if SOC has headroom
+            if soc(k-1) >= p.soc_max
+                E_batt_J(k) = 0;
+                soc(k) = soc(k-1);
+            else
+                % Calculate max energy that can be stored
+                max_storable_J = (p.soc_max - soc(k-1)) * p.battery_capacity_kWh * 3.6e6;
+                E_in = P_regen_kW(k) * 1000 * dt_k * p.battery_charge_eff;
+                E_in = min(E_in, max_storable_J);
+                E_batt_J(k) = E_in;
+                soc(k) = soc(k-1) + E_in / (p.battery_capacity_kWh * 3.6e6);
+            end
         else
             soc(k) = soc(k-1);
         end
 
+        % Use max(v, 0.1) to avoid zero-velocity friction dissipation issues
         F_net = F_motor(k) - F_resist * sign(max(vk, 0.01)) - F_friction(k);
         v(k) = max(vk + (F_net / m) * dt_k, 0);
     end
 
     total_ke_lost_J = sum(E_ke_lost_J);
     total_recovered_J = sum(E_batt_J);
-    total_friction_J = sum(F_friction .* v * p.dt_s);
+    total_friction_J = sum(F_friction .* max(v, 0.1) * p.dt_s);
 
     if total_ke_lost_J > 0
         eta_regen = 100 * total_recovered_J / total_ke_lost_J;
     else
         eta_regen = 0;
+    end
+
+    % Handle case where no regen events occur (avoid NaN)
+    regen_power_positive = P_regen_kW(P_regen_kW > 0);
+    if ~isempty(regen_power_positive)
+        avg_regen_power = mean(regen_power_positive);
+    else
+        avg_regen_power = 0;
     end
 
     results.cycle_name = cycle.name;
@@ -91,7 +109,7 @@ function results = regenerative_braking_sim(cycle, p, varargin)
     results.metrics.energy_friction_kJ = total_friction_J / 1000;
     results.metrics.regen_efficiency_pct = eta_regen;
     results.metrics.braking_events = sum(diff([0; F_regen + F_friction]) > 100);
-    results.metrics.avg_regen_power_kW = mean(P_regen_kW(P_regen_kW > 0));
+    results.metrics.avg_regen_power_kW = avg_regen_power;
     results.metrics.soc_delta_pct = 100 * (soc(end) - soc(1));
 end
 

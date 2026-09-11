@@ -27,7 +27,11 @@ function [F_net, P_regen_kW] = Regen_Controller(v_ref, v)
         P_regen_kW = F_regen*v*p.motor_efficiency*p.inverter_efficiency/1000;
         F_net = -(F_regen + F_fric) - F_resist;
     else
-        F_net = min(F_req, 8000) - F_resist;
+        % Use parametrized motor force calculation instead of magic number
+        F_traction_max = (p.motor_max_torque_Nm * p.gear_ratio * p.drivetrain_efficiency) / p.wheel_radius_m;
+        F_power_max = (p.motor_max_power_kW * 1000) / max(v, 0.5);
+        F_motor_max = min(F_traction_max, F_power_max) * p.motor_efficiency * p.inverter_efficiency;
+        F_net = min(F_req, F_motor_max) - F_resist;
         P_regen_kW = 0;
         torque_state = torque_state * 0.9;
     end
