@@ -58,9 +58,23 @@ function p = wltp_simplified_profile()
     t = (0:1:1800)';
     v = 10 + 25*sin(2*pi*t/300) + 15*sin(2*pi*t/120);
     v(v < 0) = 0;
-    v(t > 600 & t < 650) = linspace(v(find(t==600,1)), 0, 51)';
-    v(t >= 650 & t < 700) = 0;
-    v(t >= 1200 & t < 1250) = max(v(t >= 1200 & t < 1250) - linspace(0,30,50)', 0);
+    
+    % Fix: Use proper indexing to match array sizes
+    idx1 = t > 600 & t < 650;
+    if sum(idx1) > 0
+        v_start = v(find(t==600,1));
+        if isempty(v_start), v_start = v(find(idx1,1)); end
+        v(idx1) = linspace(v_start, 0, sum(idx1))';
+    end
+    
+    idx2 = t >= 650 & t < 700;
+    v(idx2) = 0;
+    
+    idx3 = t >= 1200 & t < 1250;
+    if sum(idx3) > 0
+        v(idx3) = max(v(idx3) - linspace(0, 30, sum(idx3))', 0);
+    end
+    
     p = [t, v * 3.6];
 end
 
