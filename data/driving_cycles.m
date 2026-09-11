@@ -1,7 +1,7 @@
 function cycles = driving_cycles()
 %DRIVING_CYCLES  Standard and custom speed profiles for comparison studies.
 
-    cycles = struct([]);
+    cycles = struct('name', {}, 'description', {}, 'time_s', {}, 'speed_mps', {});
 
     cycles(end+1) = make_cycle('UDDS', ...
         'Urban stop-and-go; frequent acceleration/braking events.', udds_profile());
