@@ -1,0 +1,22 @@
+# MATLAB / Simulink
+*.asv
+*.autosave
+slprj/
+*.slxc
+*.mex*
+*.mdl.r*
+*.slx.r*
+*.slx.autosave
+
+# Results (regenerate with run_all_cycles.m)
+results/*.mat
+results/*.png
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.idea/
+.vscode/
